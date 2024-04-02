@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Messaging App</title>
+  <style>
+    /* Basic styling */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    #messageInput {
+      width: calc(100% - 80px);
+    }
+    #messageList {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Firebase Messaging App</h2>
+    <!-- Authentication -->
+    <div id="authContainer">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="signIn()">Sign In</button>
+      <button onclick="signUp()">Sign Up</button>
+    </div>
+    <!-- Messaging -->
+    <div id="messagingContainer" style="display:none;">
+      <input type="text" id="messageInput" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+      <div id="messageList"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js';
+    import { getDatabase, ref, push, onChildAdded } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js';
+
+    // Firebase configuration
+    var firebaseConfig = {
+        apiKey: "AIzaSyDk3OEF4v2UhrWL97jK_WS_yQ1mpX7qdyM",
+        authDomain: "blah-d52e2.firebaseapp.com",
+        projectId: "blah-d52e2",
+        storageBucket: "blah-d52e2.appspot.com",
+        messagingSenderId: "476492043959",
+        appId: "1:476492043959:web:ba853d2db2c7a36d799f32",
+        measurementId: "G-F1L4EBGB4T" 
+    };
+
+    // Initialize Firebase
+    const firebaseApp = initializeApp(firebaseConfig);
+
+    // Auth and Database instances
+    const auth = getAuth();
+    const database = getDatabase();
+  </script>
+
+  <script>
+    // Function to toggle authentication and messaging UI
+    function toggleUI(signedIn) {
+      var authContainer = document.getElementById('authContainer');
+      var messagingContainer = document.getElementById('messagingContainer');
+      if (signedIn) {
+        authContainer.style.display = 'none';
+        messagingContainer.style.display = 'block';
+      } else {
+        authContainer.style.display = 'block';
+        messagingContainer.style.display = 'none';
+      }
+    }
+
+    // Sign up function
+    function signUp() {
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          toggleUI(true);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    // Sign in function
+    function signIn() {
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          toggleUI(true);
+          loadMessages();
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    // Send message function
+    function sendMessage() {
+      var messageInput = document.getElementById('messageInput');
+      var message = messageInput.value.trim();
+      if (message !== '') {
+        push(ref(database, 'messages'), {
+          sender: auth.currentUser.email,
+          message: message
+        });
+        messageInput.value = '';
+      }
+    }
+
+    // Load messages function
+    function loadMessages() {
+      var messageList = document.getElementById('messageList');
+      onChildAdded(ref(database, 'messages'), (snapshot) => {
+        var messageData = snapshot.val();
+        var messageElement = document.createElement('div');
+        messageElement.textContent = `${messageData.sender}: ${messageData.message}`;
+        messageList.appendChild(messageElement);
+      });
+    }
+
+    // Check if user is signed in
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        toggleUI(true);
+        loadMessages();
+      } else {
+        toggleUI(false);
+      }
+    });
+  </script>
+</body>
+</html>
